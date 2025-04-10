@@ -1,8 +1,9 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect } from "react";
 import { useRouter } from "next/navigation"
 import { Activity, Calendar, FileText, Plus, Search, Upload, Users } from "lucide-react"
+import { useAuth } from "@/lib/context/AuthContext";
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -14,37 +15,23 @@ import { RecentDocuments } from "@/app/dashboard/components/recent-documents"
 import { UpcomingAppointments } from "@/app/dashboard/components/upcoming-appointments"
 import { UserNav } from "@/app/dashboard/components/user-nav"
 
-interface UserData {
-  id: string
-  name: string
-  email: string
-  isLoggedIn: boolean
-}
-
 export default function DashboardPage() {
   const router = useRouter()
-  const [userData, setUserData] = useState<UserData | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const { user, loading } = useAuth();
 
   useEffect(() => {
-    // Check if user is logged in
-    const storedUser = localStorage.getItem("mrex_user")
-    if (storedUser) {
-      setUserData(JSON.parse(storedUser))
-    } else {
-      // Redirect to login if not logged in
-      router.push("/login")
+    if (!loading && !user) {
+      router.push("/login");
     }
-    setIsLoading(false)
-  }, [router])
+  }, [user, loading, router]);
 
   // Show loading state or redirect if not logged in
-  if (isLoading || !userData) {
-    return null
+  if (loading || !user) {
+    return null;
   }
 
   // Get first name for welcome message
-  const firstName = userData.name.split(" ")[0]
+  const firstName = user.displayName?.split(" ")[0] || "User";
 
   return (
     <>

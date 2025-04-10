@@ -6,17 +6,27 @@ import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Eye, EyeOff, FileText, Loader2 } from "lucide-react"
+import { useAuth } from "@/lib/context/AuthContext";
+import { createUserDocument } from "@/lib/firebase/firestore";
 
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function RegisterPage() {
-  const router = useRouter()
-  const [isLoading, setIsLoading] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
+  const router = useRouter();
+  const { signUp } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState("");
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -24,43 +34,48 @@ export default function RegisterPage() {
     password: "",
     userType: "patient",
     agreeToTerms: false,
-  })
+  });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
-  }
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
 
   const handleSelectChange = (value: string) => {
-    setFormData((prev) => ({ ...prev, userType: value }))
-  }
+    setFormData((prev) => ({ ...prev, userType: value }));
+  };
 
   const handleCheckboxChange = (checked: boolean) => {
-    setFormData((prev) => ({ ...prev, agreeToTerms: checked }))
-  }
+    setFormData((prev) => ({ ...prev, agreeToTerms: checked }));
+  };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setIsLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      // Store user data in localStorage
-      localStorage.setItem(
-        "mrex_user",
-        JSON.stringify({
-          id: "user123",
-          name: `${formData.firstName} ${formData.lastName}`,
-          email: formData.email,
-          userType: formData.userType,
-          isLoggedIn: true,
-        }),
-      )
+    try {
+      // Create user with Firebase Auth
+      const userCredential = await signUp(formData.email, formData.password);
+
+      // Create user document in Firestore
+      await createUserDocument({
+        uid: userCredential.user.uid,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        userType: formData.userType as "patient" | "doctor",
+        createdAt: new Date(),
+      });
 
       // Redirect to dashboard
-      router.push("/dashboard")
-    }, 1500)
-  }
+      router.push("/dashboard");
+    } catch (error: any) {
+      setError(error.message || "An error occurred during registration");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -74,8 +89,15 @@ export default function RegisterPage() {
         <div className="mx-auto w-full max-w-md space-y-6 p-6">
           <div className="space-y-2 text-center">
             <h1 className="text-3xl font-bold">Create an account</h1>
-            <p className="text-muted-foreground">Enter your information to get started</p>
+            <p className="text-muted-foreground">
+              Enter your information to get started
+            </p>
           </div>
+          {error && (
+            <div className="bg-destructive/15 text-destructive text-sm p-3 rounded-md">
+              {error}
+            </div>
+          )}
           <div className="space-y-4">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -138,14 +160,21 @@ export default function RegisterPage() {
                     ) : (
                       <Eye className="h-4 w-4 text-muted-foreground" />
                     )}
-                    <span className="sr-only">{showPassword ? "Hide password" : "Show password"}</span>
+                    <span className="sr-only">
+                      {showPassword ? "Hide password" : "Show password"}
+                    </span>
                   </Button>
                 </div>
-                <p className="text-xs text-muted-foreground">Password must be at least 8 characters long</p>
+                <p className="text-xs text-muted-foreground">
+                  Password must be at least 8 characters long
+                </p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="userType">I am a</Label>
-                <Select value={formData.userType} onValueChange={handleSelectChange}>
+                <Select
+                  value={formData.userType}
+                  onValueChange={handleSelectChange}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select user type" />
                   </SelectTrigger>
@@ -168,12 +197,19 @@ export default function RegisterPage() {
                     Terms of Service
                   </Link>{" "}
                   and{" "}
-                  <Link href="/privacy" className="text-primary hover:underline">
+                  <Link
+                    href="/privacy"
+                    className="text-primary hover:underline"
+                  >
                     Privacy Policy
                   </Link>
                 </Label>
               </div>
-              <Button type="submit" className="w-full" disabled={isLoading || !formData.agreeToTerms}>
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={isLoading || !formData.agreeToTerms}
+              >
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -186,7 +222,10 @@ export default function RegisterPage() {
             </form>
             <div className="text-center text-sm">
               Already have an account?{" "}
-              <Link href="/login" className="font-medium text-primary hover:underline">
+              <Link
+                href="/login"
+                className="font-medium text-primary hover:underline"
+              >
                 Sign in
               </Link>
             </div>
@@ -194,6 +233,6 @@ export default function RegisterPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }
 

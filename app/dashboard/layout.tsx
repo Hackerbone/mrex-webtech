@@ -17,17 +17,14 @@ import {
   SidebarProvider,
   SidebarSeparator,
 } from "@/components/ui/sidebar"
+import { LogoutButton } from "./components/logout-button";
 
 export const metadata: Metadata = {
   title: "Dashboard",
   description: "Medical Records Dashboard",
-}
+};
 
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider defaultOpen={true}>
       <div className="flex min-h-screen">
@@ -123,6 +120,7 @@ export default function DashboardLayout({
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
+                  <LogoutButton />
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
@@ -137,6 +135,6 @@ export default function DashboardLayout({
         <div className="flex-1 overflow-auto">{children}</div>
       </div>
     </SidebarProvider>
-  )
+  );
 }
 
