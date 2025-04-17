@@ -1,29 +1,83 @@
 "use client"
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation"
-import { Activity, Calendar, FileText, Plus, Search, Upload, Users } from "lucide-react"
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import {
+  Activity,
+  Calendar,
+  FileText,
+  Plus,
+  Search,
+  Upload,
+  Users,
+} from "lucide-react";
 import { useAuth } from "@/lib/context/AuthContext";
 
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { DashboardHeader } from "@/app/dashboard/components/dashboard-header"
-import { DashboardShell } from "@/app/dashboard/components/dashboard-shell"
-import { RecentDocuments } from "@/app/dashboard/components/recent-documents"
-import { UpcomingAppointments } from "@/app/dashboard/components/upcoming-appointments"
-import { UserNav } from "@/app/dashboard/components/user-nav"
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DashboardHeader } from "@/app/dashboard/components/dashboard-header";
+import { DashboardShell } from "@/app/dashboard/components/dashboard-shell";
+import { RecentDocuments } from "@/app/dashboard/components/recent-documents";
+import { UpcomingAppointments } from "@/app/dashboard/components/upcoming-appointments";
+import { UserNav } from "@/app/dashboard/components/user-nav";
+
+interface DashboardData {
+  recentRecords: any[];
+  upcomingAppointments: any[];
+  stats: {
+    totalRecords: number;
+    totalAppointments: number;
+  };
+}
 
 export default function DashboardPage() {
-  const router = useRouter()
+  const router = useRouter();
   const { user, loading } = useAuth();
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(
+    null
+  );
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (!loading && !user) {
       router.push("/login");
     }
   }, [user, loading, router]);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      if (!user) return;
+
+      try {
+        const response = await fetch("/api/dashboard", {
+          headers: {
+            "x-user-id": user.uid,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch dashboard data");
+        }
+
+        const data = await response.json();
+        setDashboardData(data);
+      } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, [user]);
 
   // Show loading state or redirect if not logged in
   if (loading || !user) {
@@ -37,14 +91,22 @@ export default function DashboardPage() {
     <>
       <div className="flex items-center justify-between space-y-2 p-4 lg:p-8">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Welcome back, {firstName}</h2>
-          <p className="text-muted-foreground">Here's an overview of your medical records and upcoming appointments.</p>
+          <h2 className="text-2xl font-bold tracking-tight">
+            Welcome back, {firstName}
+          </h2>
+          <p className="text-muted-foreground">
+            Here's an overview of your medical records and upcoming
+            appointments.
+          </p>
         </div>
         <div className="flex items-center space-x-2">
           <UserNav />
         </div>
       </div>
-      <Tabs defaultValue="overview" className="space-y-4 p-4 lg:p-8 pt-0 lg:pt-0">
+      <Tabs
+        defaultValue="overview"
+        className="space-y-4 p-4 lg:p-8 pt-0 lg:pt-0"
+      >
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <TabsList className="h-auto w-full justify-start sm:w-auto">
             <TabsTrigger value="overview">Overview</TabsTrigger>
@@ -67,42 +129,60 @@ export default function DashboardPage() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Records</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Total Records
+                </CardTitle>
                 <FileText className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">42</div>
-                <p className="text-xs text-muted-foreground">+3 from last month</p>
+                <div className="text-2xl font-bold">
+                  {dashboardData?.stats.totalRecords || 0}
+                </div>
+                <p className="text-xs text-muted-foreground">Medical records</p>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Upcoming Appointments</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Upcoming Appointments
+                </CardTitle>
                 <Calendar className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">3</div>
-                <p className="text-xs text-muted-foreground">Next: Mar 28, 2:30 PM</p>
+                <div className="text-2xl font-bold">
+                  {dashboardData?.stats.totalAppointments || 0}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Scheduled appointments
+                </p>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Connected Doctors</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Connected Doctors
+                </CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">5</div>
-                <p className="text-xs text-muted-foreground">+1 in the last 30 days</p>
+                <p className="text-xs text-muted-foreground">
+                  Active connections
+                </p>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Health Status</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Health Status
+                </CardTitle>
                 <Activity className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">Good</div>
-                <p className="text-xs text-muted-foreground">Last checkup: 2 weeks ago</p>
+                <p className="text-xs text-muted-foreground">
+                  Based on recent records
+                </p>
               </CardContent>
             </Card>
           </div>
@@ -110,25 +190,34 @@ export default function DashboardPage() {
             <Card className="lg:col-span-4">
               <CardHeader>
                 <CardTitle>Recent Medical Records</CardTitle>
-                <CardDescription>Your most recently added or updated medical documents.</CardDescription>
+                <CardDescription>
+                  Your most recently added or updated medical documents.
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                <RecentDocuments />
+                <RecentDocuments records={dashboardData?.recentRecords || []} />
               </CardContent>
             </Card>
             <Card className="col-span-3">
               <CardHeader>
                 <CardTitle>Upcoming Appointments</CardTitle>
-                <CardDescription>Your scheduled appointments with healthcare providers.</CardDescription>
+                <CardDescription>
+                  Your scheduled appointments with healthcare providers.
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                <UpcomingAppointments />
+                <UpcomingAppointments
+                  appointments={dashboardData?.upcomingAppointments || []}
+                />
               </CardContent>
             </Card>
           </div>
         </TabsContent>
         <TabsContent value="records" className="space-y-4">
-          <DashboardHeader heading="Medical Records" text="Manage and view all your medical documents.">
+          <DashboardHeader
+            heading="Medical Records"
+            text="Manage and view all your medical documents."
+          >
             <div className="flex space-x-2">
               <Button variant="outline">
                 <Upload className="mr-2 h-4 w-4" />
@@ -141,30 +230,42 @@ export default function DashboardPage() {
             </div>
           </DashboardHeader>
           <DashboardShell>
-            <p className="text-muted-foreground">Your complete medical records will appear here.</p>
+            <p className="text-muted-foreground">
+              Your complete medical records will appear here.
+            </p>
           </DashboardShell>
         </TabsContent>
         <TabsContent value="doctors" className="space-y-4">
-          <DashboardHeader heading="Connected Doctors" text="Manage your healthcare providers and sharing permissions.">
+          <DashboardHeader
+            heading="Connected Doctors"
+            text="Manage your healthcare providers and sharing permissions."
+          >
             <Button>
               <Plus className="mr-2 h-4 w-4" />
               Connect Doctor
             </Button>
           </DashboardHeader>
           <DashboardShell>
-            <p className="text-muted-foreground">Your connected healthcare providers will appear here.</p>
+            <p className="text-muted-foreground">
+              Your connected healthcare providers will appear here.
+            </p>
           </DashboardShell>
         </TabsContent>
         <TabsContent value="settings" className="space-y-4">
-          <DashboardHeader heading="Account Settings" text="Manage your account preferences and security settings.">
+          <DashboardHeader
+            heading="Account Settings"
+            text="Manage your account preferences and security settings."
+          >
             <Button variant="outline">Save Changes</Button>
           </DashboardHeader>
           <DashboardShell>
-            <p className="text-muted-foreground">Account settings and preferences will appear here.</p>
+            <p className="text-muted-foreground">
+              Account settings and preferences will appear here.
+            </p>
           </DashboardShell>
         </TabsContent>
       </Tabs>
     </>
-  )
+  );
 }
 

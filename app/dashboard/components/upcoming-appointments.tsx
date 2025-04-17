@@ -11,49 +11,50 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
-const appointments = [
-  {
-    id: "1",
-    doctor: "Dr. Jane Smith",
-    specialty: "Cardiologist",
-    date: "Mar 28, 2025",
-    time: "2:30 PM",
-    location: "Heart Health Clinic",
-    avatar: "JS",
-  },
-  {
-    id: "2",
-    doctor: "Dr. Robert Chen",
-    specialty: "Dermatologist",
-    date: "Apr 05, 2025",
-    time: "10:15 AM",
-    location: "Skin Care Center",
-    avatar: "RC",
-  },
-  {
-    id: "3",
-    doctor: "Dr. Maria Garcia",
-    specialty: "Neurologist",
-    date: "Apr 12, 2025",
-    time: "3:45 PM",
-    location: "Neurology Associates",
-    avatar: "MG",
-  },
-]
+interface UpcomingAppointmentsProps {
+  appointments: Array<{
+    id: string;
+    doctorName: string;
+    date: string;
+    time: string;
+    type: string;
+    notes?: string;
+  }>;
+}
 
-export function UpcomingAppointments() {
+export function UpcomingAppointments({
+  appointments,
+}: UpcomingAppointmentsProps) {
+  if (appointments.length === 0) {
+    return (
+      <div className="text-center text-muted-foreground py-4">
+        No upcoming appointments found.
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <div className="grid gap-4">
         {appointments.map((appointment) => (
-          <div key={appointment.id} className="flex items-center justify-between space-x-4">
+          <div
+            key={appointment.id}
+            className="flex items-center justify-between space-x-4"
+          >
             <div className="flex items-center space-x-4">
               <Avatar className="h-10 w-10">
-                <AvatarFallback>{appointment.avatar}</AvatarFallback>
+                <AvatarFallback>
+                  {appointment.doctorName
+                    .split(" ")
+                    .map((word) => word[0])
+                    .join("")}
+                </AvatarFallback>
               </Avatar>
               <div>
-                <p className="text-sm font-medium leading-none">{appointment.doctor}</p>
-                <p className="text-sm text-muted-foreground">{appointment.specialty}</p>
+                <h4 className="font-medium">{appointment.doctorName}</h4>
+                <p className="text-sm text-muted-foreground">
+                  {appointment.type} • {appointment.date} at {appointment.time}
+                </p>
               </div>
             </div>
             <div className="space-y-1">
@@ -64,10 +65,6 @@ export function UpcomingAppointments() {
               <div className="flex items-center text-sm text-muted-foreground">
                 <Clock className="mr-1 h-3 w-3" />
                 {appointment.time}
-              </div>
-              <div className="flex items-center text-sm text-muted-foreground">
-                <MapPin className="mr-1 h-3 w-3" />
-                {appointment.location}
               </div>
             </div>
             <DropdownMenu>
@@ -92,6 +89,6 @@ export function UpcomingAppointments() {
         Schedule new appointment
       </Button>
     </div>
-  )
+  );
 }
 
