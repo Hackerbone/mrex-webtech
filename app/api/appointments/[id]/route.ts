@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb/connection";
-import { MedicalRecord } from "@/lib/mongodb/models/MedicalRecord";
+import { Appointment } from "@/lib/mongodb/models/Appointment";
 import { User } from "@/lib/mongodb/models/User";
 
-// GET single medical record
+// GET single appointment
 export async function GET(
   request: Request,
   { params }: { params: { id: string } }
@@ -23,21 +23,21 @@ export async function GET(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const record = await MedicalRecord.findOne({
+    const appointment = await Appointment.findOne({
       _id: params.id,
       userId: user._id.toString(),
     });
 
-    if (!record) {
+    if (!appointment) {
       return NextResponse.json(
-        { error: "Medical record not found" },
+        { error: "Appointment not found" },
         { status: 404 }
       );
     }
 
-    return NextResponse.json(record);
+    return NextResponse.json(appointment);
   } catch (error) {
-    console.error("Medical Record API Error:", error);
+    console.error("Appointment API Error:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 }
@@ -45,7 +45,7 @@ export async function GET(
   }
 }
 
-// PUT update medical record
+// PUT update appointment
 export async function PUT(
   request: Request,
   { params }: { params: { id: string } }
@@ -58,9 +58,9 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { name, type, date, doctor, notes } = body;
+    const { doctorName, date, time, type, notes, status } = body;
 
-    if (!name || !type || !date || !doctor) {
+    if (!doctorName || !date || !time || !type) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
@@ -75,28 +75,29 @@ export async function PUT(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const record = await MedicalRecord.findOneAndUpdate(
+    const appointment = await Appointment.findOneAndUpdate(
       { _id: params.id, userId: user._id.toString() },
       {
-        name,
-        type,
+        doctorName,
         date: new Date(date),
-        doctor,
+        time,
+        type,
         notes,
+        status: status || "scheduled",
       },
       { new: true }
     );
 
-    if (!record) {
+    if (!appointment) {
       return NextResponse.json(
-        { error: "Medical record not found" },
+        { error: "Appointment not found" },
         { status: 404 }
       );
     }
 
-    return NextResponse.json(record);
+    return NextResponse.json(appointment);
   } catch (error) {
-    console.error("Medical Record API Error:", error);
+    console.error("Appointment API Error:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 }
@@ -104,7 +105,7 @@ export async function PUT(
   }
 }
 
-// DELETE medical record
+// DELETE appointment
 export async function DELETE(
   request: Request,
   { params }: { params: { id: string } }
@@ -124,23 +125,21 @@ export async function DELETE(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const record = await MedicalRecord.findOneAndDelete({
+    const appointment = await Appointment.findOneAndDelete({
       _id: params.id,
       userId: user._id.toString(),
     });
 
-    if (!record) {
+    if (!appointment) {
       return NextResponse.json(
-        { error: "Medical record not found" },
+        { error: "Appointment not found" },
         { status: 404 }
       );
     }
 
-    return NextResponse.json({
-      message: "Medical record deleted successfully",
-    });
+    return NextResponse.json({ message: "Appointment deleted successfully" });
   } catch (error) {
-    console.error("Medical Record API Error:", error);
+    console.error("Appointment API Error:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 }

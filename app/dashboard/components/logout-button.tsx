@@ -2,7 +2,7 @@
 
 import { LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/lib/context/AuthContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 import { SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar";
 

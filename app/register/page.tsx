@@ -1,13 +1,10 @@
 "use client"
 
-import type React from "react"
-
-import { useState } from "react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { Eye, EyeOff, FileText, Loader2 } from "lucide-react"
-import { useAuth } from "@/lib/context/AuthContext";
-import { createUserDocument } from "@/lib/firebase/firestore";
+import type React from "react";
+import { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Eye, EyeOff, FileText, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -20,10 +17,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { signUp } = useAuth();
+  const { register } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
@@ -56,17 +54,11 @@ export default function RegisterPage() {
 
     try {
       // Create user with Firebase Auth
-      const userCredential = await signUp(formData.email, formData.password);
-
-      // Create user document in Firestore
-      await createUserDocument({
-        uid: userCredential.user.uid,
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.email,
-        userType: formData.userType as "patient" | "doctor",
-        createdAt: new Date(),
-      });
+      await register(
+        formData.email,
+        formData.password,
+        `${formData.firstName} ${formData.lastName}`
+      );
 
       // Redirect to dashboard
       router.push("/dashboard");

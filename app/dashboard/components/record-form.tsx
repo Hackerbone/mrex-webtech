@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/lib/context/AuthContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -53,7 +53,7 @@ export function RecordForm({ initialData, onSuccess }: RecordFormProps) {
         method,
         headers: {
           "Content-Type": "application/json",
-          "x-user-id": user?.uid || "",
+          "x-firebase-id": user?.id || "",
         },
         body: JSON.stringify(formData),
       });

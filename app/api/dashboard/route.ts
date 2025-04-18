@@ -2,24 +2,32 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb/connection";
 import { MedicalRecord } from "@/lib/mongodb/models/MedicalRecord";
 import { Appointment } from "@/lib/mongodb/models/Appointment";
+import { User } from "@/lib/mongodb/models/User";
 
 export async function GET(request: Request) {
   try {
-    // Get user ID from the request headers (you'll need to implement proper auth)
-    const userId = request.headers.get("x-user-id");
+    const firebaseId = request.headers.get("x-firebase-id");
 
-    if (!userId) {
+    if (!firebaseId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     await connectDB();
 
-    // Fetch recent medical records
+    // Find the user by Firebase ID
+    const user = await User.findOne({ firebaseId });
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const userId = user._id.toString();
+
+    // Get recent medical records
     const recentRecords = await MedicalRecord.find({ userId })
       .sort({ uploadDate: -1 })
       .limit(5);
 
-    // Fetch upcoming appointments
+    // Get upcoming appointments
     const upcomingAppointments = await Appointment.find({
       userId,
       date: { $gte: new Date() },
@@ -28,9 +36,12 @@ export async function GET(request: Request) {
       .sort({ date: 1 })
       .limit(5);
 
-    // Get total counts
+    // Get stats
     const totalRecords = await MedicalRecord.countDocuments({ userId });
-    const totalAppointments = await Appointment.countDocuments({ userId });
+    const totalAppointments = await Appointment.countDocuments({
+      userId,
+      status: "scheduled",
+    });
 
     return NextResponse.json({
       recentRecords,

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useAuth } from "@/lib/context/AuthContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { RecordForm } from "@/app/dashboard/components/record-form";
 import { DashboardHeader } from "@/app/dashboard/components/dashboard-header";
 
@@ -16,7 +16,7 @@ export default function EditRecordPage({ params }: { params: { id: string } }) {
       try {
         const response = await fetch(`/api/records/${params.id}`, {
           headers: {
-            "x-user-id": user?.uid || "",
+            "x-firebase-id": user?.id || "",
           },
         });
 

@@ -2,12 +2,12 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/lib/context/AuthContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { FileText, MoreHorizontal, Plus, Search, Trash } from "lucide-react";
 import { DashboardHeader } from "@/app/dashboard/components/dashboard-header";
 import { DashboardShell } from "@/app/dashboard/components/dashboard-shell";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input"
+import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,17 +27,19 @@ interface MedicalRecord {
 export default function RecordsPage() {
   const router = useRouter();
   const { user } = useAuth();
-  const [records, setRecords] = useState<MedicalRecord[]>([])
-  const [searchQuery, setSearchQuery] = useState("")
+  const [records, setRecords] = useState<MedicalRecord[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+
+  console.log("User in RecordsPage:", user);
 
   useEffect(() => {
     const fetchRecords = async () => {
       try {
         const response = await fetch("/api/records", {
           headers: {
-            "x-user-id": user?.uid || "",
+            "x-firebase-id": user?.id || "",
           },
         });
 
@@ -55,6 +57,7 @@ export default function RecordsPage() {
     };
 
     if (user) {
+      console.log("Fetching records for user:", user);
       fetchRecords();
     }
   }, [user]);
@@ -68,7 +71,7 @@ export default function RecordsPage() {
       const response = await fetch(`/api/records/${id}`, {
         method: "DELETE",
         headers: {
-          "x-user-id": user?.uid || "",
+          "x-firebase-id": user?.id || "",
         },
       });
 

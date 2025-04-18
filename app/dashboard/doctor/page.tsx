@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -8,7 +8,6 @@ import {
   FileText,
   Plus,
   Search,
-  Upload,
   Users,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -25,25 +24,40 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DashboardHeader } from "@/app/dashboard/components/dashboard-header";
 import { DashboardShell } from "@/app/dashboard/components/dashboard-shell";
-import { RecentDocuments } from "@/app/dashboard/components/recent-documents";
-import { UpcomingAppointments } from "@/app/dashboard/components/upcoming-appointments";
 import { UserNav } from "@/app/dashboard/components/user-nav";
 
-interface DashboardData {
-  recentRecords: any[];
-  upcomingAppointments: any[];
+interface DoctorDashboardData {
+  patients: {
+    id: string;
+    name: string;
+    lastVisit: string;
+    nextAppointment: string | null;
+  }[];
+  recentRecords: {
+    id: string;
+    patientName: string;
+    type: string;
+    date: string;
+    status: string;
+  }[];
+  upcomingAppointments: {
+    id: string;
+    patientName: string;
+    date: string;
+    type: string;
+  }[];
   stats: {
-    totalRecords: number;
+    totalPatients: number;
     totalAppointments: number;
+    pendingRecords: number;
   };
 }
 
-export default function DashboardPage() {
+export default function DoctorDashboardPage() {
   const router = useRouter();
   const { user, loading } = useAuth();
-  const [dashboardData, setDashboardData] = useState<DashboardData | null>(
-    null
-  );
+  const [dashboardData, setDashboardData] =
+    useState<DoctorDashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -57,7 +71,7 @@ export default function DashboardPage() {
       if (!user) return;
 
       try {
-        const response = await fetch("/api/dashboard", {
+        const response = await fetch("/api/doctor/dashboard", {
           headers: {
             "x-firebase-id": user.id,
           },
@@ -79,12 +93,10 @@ export default function DashboardPage() {
     fetchDashboardData();
   }, [user]);
 
-  // Show loading state or redirect if not logged in
   if (loading || !user) {
     return null;
   }
-  console.log("User in DashboardPage:", user);
-  // Get first name for welcome message
+
   const firstName = user.name?.split(" ")[0] ?? user.email;
 
   return (
@@ -92,11 +104,10 @@ export default function DashboardPage() {
       <div className="flex items-center justify-between space-y-2 p-4 lg:p-8">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">
-            Welcome back, {firstName}
+            Welcome back, Dr. {firstName}
           </h2>
           <p className="text-muted-foreground">
-            Here's an overview of your medical records and upcoming
-            appointments.
+            Here's an overview of your patients and appointments.
           </p>
         </div>
         <div className="flex items-center space-x-2">
@@ -110,19 +121,15 @@ export default function DashboardPage() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <TabsList className="h-auto w-full justify-start sm:w-auto">
             <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="patients">Patients</TabsTrigger>
             <TabsTrigger value="records">Records</TabsTrigger>
-            <TabsTrigger value="doctors">Doctors</TabsTrigger>
-            <TabsTrigger value="settings">Settings</TabsTrigger>
+            <TabsTrigger value="appointments">Appointments</TabsTrigger>
           </TabsList>
           <div className="flex flex-col gap-2 sm:flex-row">
             <div className="relative w-full sm:w-64">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Search records..." className="pl-8" />
+              <Input placeholder="Search patients..." className="pl-8" />
             </div>
-            <Button className="w-full sm:w-auto">
-              <Plus className="mr-2 h-4 w-4" />
-              New Record
-            </Button>
           </div>
         </div>
         <TabsContent value="overview" className="space-y-4">
@@ -130,21 +137,21 @@ export default function DashboardPage() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
-                  Total Records
+                  Total Patients
                 </CardTitle>
-                <FileText className="h-4 w-4 text-muted-foreground" />
+                <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {dashboardData?.stats.totalRecords || 0}
+                  {dashboardData?.stats.totalPatients || 0}
                 </div>
-                <p className="text-xs text-muted-foreground">Medical records</p>
+                <p className="text-xs text-muted-foreground">Active patients</p>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
-                  Upcoming Appointments
+                  Today's Appointments
                 </CardTitle>
                 <Calendar className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
@@ -160,112 +167,129 @@ export default function DashboardPage() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
-                  Connected Doctors
+                  Pending Records
                 </CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
+                <FileText className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">5</div>
+                <div className="text-2xl font-bold">
+                  {dashboardData?.stats.pendingRecords || 0}
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  Active connections
+                  Records to review
                 </p>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
-                  Health Status
+                  Active Patients
                 </CardTitle>
                 <Activity className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">Good</div>
-                <p className="text-xs text-muted-foreground">
-                  Based on recent records
-                </p>
+                <div className="text-2xl font-bold">
+                  {dashboardData?.patients.length || 0}
+                </div>
+                <p className="text-xs text-muted-foreground">Under treatment</p>
               </CardContent>
             </Card>
           </div>
           <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-7">
             <Card className="lg:col-span-4">
               <CardHeader>
-                <CardTitle>Recent Medical Records</CardTitle>
+                <CardTitle>Recent Patient Records</CardTitle>
                 <CardDescription>
-                  Your most recently added or updated medical documents.
+                  Latest medical records from your patients.
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <RecentDocuments records={dashboardData?.recentRecords || []} />
+                <div className="space-y-4">
+                  {dashboardData?.recentRecords.map((record) => (
+                    <div
+                      key={record.id}
+                      className="flex items-center justify-between"
+                    >
+                      <div>
+                        <p className="font-medium">{record.patientName}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {record.type} - {record.date}
+                        </p>
+                      </div>
+                      <span className="text-sm font-medium">
+                        {record.status}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </CardContent>
             </Card>
             <Card className="col-span-3">
               <CardHeader>
                 <CardTitle>Upcoming Appointments</CardTitle>
                 <CardDescription>
-                  Your scheduled appointments with healthcare providers.
+                  Your scheduled patient appointments.
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <UpcomingAppointments
-                  appointments={dashboardData?.upcomingAppointments || []}
-                />
+                <div className="space-y-4">
+                  {dashboardData?.upcomingAppointments.map((appointment) => (
+                    <div
+                      key={appointment.id}
+                      className="flex items-center justify-between"
+                    >
+                      <div>
+                        <p className="font-medium">{appointment.patientName}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {appointment.type} - {appointment.date}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           </div>
         </TabsContent>
-        <TabsContent value="records" className="space-y-4">
+        <TabsContent value="patients" className="space-y-4">
           <DashboardHeader
-            heading="Medical Records"
-            text="Manage and view all your medical documents."
-          >
-            <div className="flex space-x-2">
-              <Button variant="outline">
-                <Upload className="mr-2 h-4 w-4" />
-                Upload
-              </Button>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Record
-              </Button>
-            </div>
-          </DashboardHeader>
-          <DashboardShell>
-            <p className="text-muted-foreground">
-              Your complete medical records will appear here.
-            </p>
-          </DashboardShell>
-        </TabsContent>
-        <TabsContent value="doctors" className="space-y-4">
-          <DashboardHeader
-            heading="Connected Doctors"
-            text="Manage your healthcare providers and sharing permissions."
+            heading="Patient List"
+            text="View and manage your patients."
           >
             <Button>
               <Plus className="mr-2 h-4 w-4" />
-              Connect Doctor
+              Add Patient
             </Button>
           </DashboardHeader>
           <DashboardShell>
-            <p className="text-muted-foreground">
-              Your connected healthcare providers will appear here.
-            </p>
-          </DashboardShell>
-        </TabsContent>
-        <TabsContent value="settings" className="space-y-4">
-          <DashboardHeader
-            heading="Account Settings"
-            text="Manage your account preferences and security settings."
-          >
-            <Button variant="outline">Save Changes</Button>
-          </DashboardHeader>
-          <DashboardShell>
-            <p className="text-muted-foreground">
-              Account settings and preferences will appear here.
-            </p>
+            <div className="space-y-4">
+              {dashboardData?.patients.map((patient) => (
+                <div
+                  key={patient.id}
+                  className="flex items-center justify-between p-4 border rounded-lg"
+                >
+                  <div>
+                    <p className="font-medium">{patient.name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      Last visit: {patient.lastVisit}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-medium">
+                      {patient.nextAppointment
+                        ? `Next: ${patient.nextAppointment}`
+                        : "No upcoming appointments"}
+                    </p>
+                    <Button variant="outline" size="sm">
+                      View Profile
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </DashboardShell>
         </TabsContent>
       </Tabs>
     </>
   );
 }
-
