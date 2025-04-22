@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { signIn } = useAuth();
+  const { login } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
@@ -40,7 +40,7 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      await signIn(formData.email, formData.password);
+      await login(formData.email, formData.password);
       router.push("/dashboard");
     } catch (error: any) {
       setError(error.message || "Failed to sign in");

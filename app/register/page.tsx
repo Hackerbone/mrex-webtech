@@ -26,17 +26,35 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
+    name: "",
     email: "",
     password: "",
     userType: "patient",
+    phoneNumber: "",
+    address: {
+      street: "",
+      city: "",
+      state: "",
+      zipCode: "",
+      country: "",
+    },
     agreeToTerms: false,
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (name.startsWith("address.")) {
+      const addressField = name.split(".")[1];
+      setFormData((prev) => ({
+        ...prev,
+        address: {
+          ...prev.address,
+          [addressField]: value,
+        },
+      }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleSelectChange = (value: string) => {
@@ -53,17 +71,20 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
-      // Create user with Firebase Auth
       await register(
         formData.email,
         formData.password,
-        `${formData.firstName} ${formData.lastName}`
+        formData.name,
+        formData.userType,
+        {
+          phoneNumber: formData.phoneNumber,
+          address: formData.address,
+        }
       );
-
-      // Redirect to dashboard
       router.push("/dashboard");
     } catch (error: any) {
-      setError(error.message || "An error occurred during registration");
+      console.error("Registration error:", error);
+      setError(error.message || "Failed to register. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -92,29 +113,16 @@ export default function RegisterPage() {
           )}
           <div className="space-y-4">
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="firstName">First name</Label>
-                  <Input
-                    id="firstName"
-                    name="firstName"
-                    placeholder="John"
-                    required
-                    value={formData.firstName}
-                    onChange={handleChange}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lastName">Last name</Label>
-                  <Input
-                    id="lastName"
-                    name="lastName"
-                    placeholder="Doe"
-                    required
-                    value={formData.lastName}
-                    onChange={handleChange}
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="name">Full Name</Label>
+                <Input
+                  id="name"
+                  name="name"
+                  placeholder="John Doe"
+                  required
+                  value={formData.name}
+                  onChange={handleChange}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
@@ -162,6 +170,17 @@ export default function RegisterPage() {
                 </p>
               </div>
               <div className="space-y-2">
+                <Label htmlFor="phoneNumber">Phone Number</Label>
+                <Input
+                  id="phoneNumber"
+                  name="phoneNumber"
+                  type="tel"
+                  placeholder="+1 (555) 000-0000"
+                  value={formData.phoneNumber}
+                  onChange={handleChange}
+                />
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="userType">I am a</Label>
                 <Select
                   value={formData.userType}
@@ -175,6 +194,45 @@ export default function RegisterPage() {
                     <SelectItem value="doctor">Healthcare Provider</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Address</Label>
+                <div className="grid gap-2">
+                  <Input
+                    name="address.street"
+                    placeholder="Street Address"
+                    value={formData.address.street}
+                    onChange={handleChange}
+                  />
+                  <div className="grid grid-cols-2 gap-2">
+                    <Input
+                      name="address.city"
+                      placeholder="City"
+                      value={formData.address.city}
+                      onChange={handleChange}
+                    />
+                    <Input
+                      name="address.state"
+                      placeholder="State"
+                      value={formData.address.state}
+                      onChange={handleChange}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Input
+                      name="address.zipCode"
+                      placeholder="ZIP Code"
+                      value={formData.address.zipCode}
+                      onChange={handleChange}
+                    />
+                    <Input
+                      name="address.country"
+                      placeholder="Country"
+                      value={formData.address.country}
+                      onChange={handleChange}
+                    />
+                  </div>
+                </div>
               </div>
               <div className="flex items-start space-x-2">
                 <Checkbox

@@ -1,45 +1,51 @@
-import { NextResponse } from "next/server";
-import connectDB from "@/lib/mongodb/connection";
-import { MedicalRecord } from "@/lib/mongodb/models/MedicalRecord";
-import { User } from "@/lib/mongodb/models/User";
+import { NextRequest, NextResponse } from "next/server";
+import clientPromise from "@/lib/mongodb";
+import { ObjectId } from "mongodb";
+import { MedicalRecord } from "@/lib/mongodb/models/medical-record";
 
 // GET single medical record
 export async function GET(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
     const firebaseId = request.headers.get("x-firebase-id");
 
     if (!firebaseId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 }
+      );
     }
 
-    await connectDB();
+    const client = await clientPromise;
+    const db = client.db();
 
-    // Find the user by Firebase ID
-    const user = await User.findOne({ firebaseId });
+    // Get the user's ID
+    const user = await db.collection("users").findOne({ firebaseId });
+
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    // Get the record using Mongoose
     const record = await MedicalRecord.findOne({
-      _id: params.id,
-      userId: user._id.toString(),
+      _id: new ObjectId(params.id),
+      patientId: user._id,
     });
 
     if (!record) {
       return NextResponse.json(
-        { error: "Medical record not found" },
+        { error: "Record not found or unauthorized" },
         { status: 404 }
       );
     }
 
-    return NextResponse.json(record);
+    return NextResponse.json({ record });
   } catch (error) {
-    console.error("Medical Record API Error:", error);
+    console.error("Error fetching record:", error);
     return NextResponse.json(
-      { error: "Internal Server Error" },
+      { error: "Failed to fetch record" },
       { status: 500 }
     );
   }
@@ -47,58 +53,60 @@ export async function GET(
 
 // PUT update medical record
 export async function PUT(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
     const firebaseId = request.headers.get("x-firebase-id");
 
     if (!firebaseId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const body = await request.json();
-    const { name, type, date, doctor, notes } = body;
-
-    if (!name || !type || !date || !doctor) {
       return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400 }
+        { error: "Authentication required" },
+        { status: 401 }
       );
     }
 
-    await connectDB();
+    const client = await clientPromise;
+    const db = client.db();
 
-    // Find the user by Firebase ID
-    const user = await User.findOne({ firebaseId });
+    // Get the user's ID
+    const user = await db.collection("users").findOne({ firebaseId });
+
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const record = await MedicalRecord.findOneAndUpdate(
-      { _id: params.id, userId: user._id.toString() },
+    const data = await request.json();
+
+    // Update the record using Mongoose
+    const result = await MedicalRecord.findOneAndUpdate(
+      { _id: new ObjectId(params.id), patientId: user._id },
       {
-        name,
-        type,
-        date: new Date(date),
-        doctor,
-        notes,
+        $set: {
+          name: data.name,
+          type: data.type,
+          date: new Date(data.date),
+          doctor: data.doctor,
+          notes: data.notes || "",
+          sharedWith: data.sharedWith || [],
+          updatedAt: new Date(),
+        },
       },
       { new: true }
     );
 
-    if (!record) {
+    if (!result) {
       return NextResponse.json(
-        { error: "Medical record not found" },
+        { error: "Record not found or unauthorized" },
         { status: 404 }
       );
     }
 
-    return NextResponse.json(record);
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Medical Record API Error:", error);
+    console.error("Error updating record:", error);
     return NextResponse.json(
-      { error: "Internal Server Error" },
+      { error: "Failed to update record" },
       { status: 500 }
     );
   }
@@ -106,43 +114,47 @@ export async function PUT(
 
 // DELETE medical record
 export async function DELETE(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
     const firebaseId = request.headers.get("x-firebase-id");
 
     if (!firebaseId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 }
+      );
     }
 
-    await connectDB();
+    const client = await clientPromise;
+    const db = client.db();
 
-    // Find the user by Firebase ID
-    const user = await User.findOne({ firebaseId });
+    // Get the user's ID
+    const user = await db.collection("users").findOne({ firebaseId });
+
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const record = await MedicalRecord.findOneAndDelete({
-      _id: params.id,
-      userId: user._id.toString(),
+    // Delete the record using Mongoose
+    const result = await MedicalRecord.findOneAndDelete({
+      _id: new ObjectId(params.id),
+      patientId: user._id,
     });
 
-    if (!record) {
+    if (!result) {
       return NextResponse.json(
-        { error: "Medical record not found" },
+        { error: "Record not found or unauthorized" },
         { status: 404 }
       );
     }
 
-    return NextResponse.json({
-      message: "Medical record deleted successfully",
-    });
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Medical Record API Error:", error);
+    console.error("Error deleting record:", error);
     return NextResponse.json(
-      { error: "Internal Server Error" },
+      { error: "Failed to delete record" },
       { status: 500 }
     );
   }

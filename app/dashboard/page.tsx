@@ -35,6 +35,7 @@ interface DashboardData {
   stats: {
     totalRecords: number;
     totalAppointments: number;
+    connectedDoctors: number;
   };
 }
 
@@ -57,6 +58,7 @@ export default function DashboardPage() {
       if (!user) return;
 
       try {
+        // Fetch main dashboard data
         const response = await fetch("/api/dashboard", {
           headers: {
             "x-firebase-id": user.id,
@@ -68,7 +70,28 @@ export default function DashboardPage() {
         }
 
         const data = await response.json();
-        setDashboardData(data);
+
+        // Fetch connected doctors count
+        const doctorsResponse = await fetch("/api/users/connected-doctors", {
+          headers: {
+            "x-firebase-id": user.id,
+          },
+        });
+
+        if (!doctorsResponse.ok) {
+          throw new Error("Failed to fetch connected doctors count");
+        }
+
+        const doctorsData = await doctorsResponse.json();
+
+        // Update dashboard data with connected doctors count
+        setDashboardData({
+          ...data,
+          stats: {
+            ...data.stats,
+            connectedDoctors: doctorsData.count,
+          },
+        });
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
       } finally {
@@ -165,7 +188,9 @@ export default function DashboardPage() {
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">5</div>
+                <div className="text-2xl font-bold">
+                  {dashboardData?.stats.connectedDoctors || 0}
+                </div>
                 <p className="text-xs text-muted-foreground">
                   Active connections
                 </p>

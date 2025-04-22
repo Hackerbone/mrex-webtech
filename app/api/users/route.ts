@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     await connectDB();
 
     const body = await request.json();
-    const { firebaseId, name, email, userType } = body;
+    const { firebaseId, name, email, userType, phoneNumber, address } = body;
 
     // Check if user already exists
     const existingUser = await User.findOne({ firebaseId });
@@ -35,6 +35,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    console.log("Creating user:", {
+      firebaseId,
+      name,
+      email,
+      userType,
+      phoneNumber,
+      address,
+    });
     // Create new user
     const user = await User.create({
       firebaseId,
@@ -49,6 +57,8 @@ export async function POST(request: NextRequest) {
         theme: "system",
         language: "en",
       },
+      phoneNumber,
+      address,
     });
 
     return NextResponse.json(user, { status: 201 });

@@ -1,15 +1,10 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb/connection";
 import { getAuth } from "firebase-admin/auth";
-import { initAdmin } from "@/lib/firebase/admin";
 import { Doctor } from "@/lib/mongodb/models/doctor";
 import { PatientDoctor } from "@/lib/mongodb/models/patient-doctor";
-import { Patient } from "@/lib/mongodb/models/patient";
+import { Appointment } from "@/lib/mongodb/models/Appointment";
 import { MedicalRecord } from "@/lib/mongodb/models/medical-record";
-import { Appointment } from "@/lib/mongodb/models/appointment";
-
-// Initialize Firebase Admin
-initAdmin();
 
 export async function GET(request: Request) {
   try {

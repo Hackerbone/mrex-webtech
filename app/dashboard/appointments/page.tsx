@@ -20,10 +20,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { DoctorSelect } from "../components/doctor-select";
 import { toast } from "sonner";
 
 interface Appointment {
   _id: string;
+  doctorId: string;
   doctorName: string;
   date: string;
   time: string;
@@ -34,11 +36,11 @@ interface Appointment {
 
 export default function AppointmentsPage() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, loading: userLoading } = useAuth();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
-    doctorName: "",
+    doctorId: "",
     date: "",
     time: "",
     type: "",
@@ -46,7 +48,7 @@ export default function AppointmentsPage() {
   });
 
   useEffect(() => {
-    if (!user) {
+    if (!userLoading && !user) {
       router.push("/login");
       return;
     }
@@ -82,12 +84,12 @@ export default function AppointmentsPage() {
         },
         body: JSON.stringify(formData),
       });
-
+      console.log("Response:", response);
       if (!response.ok) throw new Error("Failed to create appointment");
 
       toast.success("Appointment created successfully");
       setFormData({
-        doctorName: "",
+        doctorId: "",
         date: "",
         time: "",
         type: "",
@@ -125,6 +127,7 @@ export default function AppointmentsPage() {
     return <div>Loading...</div>;
   }
 
+  console.log(appointments);
   return (
     <div className="container mx-auto p-6">
       <h1 className="text-3xl font-bold mb-6">Appointments</h1>
@@ -139,18 +142,14 @@ export default function AppointmentsPage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Doctor Name
-                </label>
-                <Input
-                  required
-                  value={formData.doctorName}
-                  onChange={(e) =>
-                    setFormData({ ...formData, doctorName: e.target.value })
-                  }
-                />
-              </div>
+              <DoctorSelect
+                value={formData.doctorId}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, doctorId: value })
+                }
+                label="Doctor"
+                placeholder="Select a doctor"
+              />
 
               <div>
                 <label className="block text-sm font-medium mb-1">Date</label>
@@ -190,10 +189,17 @@ export default function AppointmentsPage() {
                     <SelectValue placeholder="Select type" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="checkup">Regular Checkup</SelectItem>
-                    <SelectItem value="followup">Follow-up</SelectItem>
+                    <SelectItem value="initial_consultation">
+                      Initial Consultation
+                    </SelectItem>
+                    <SelectItem value="follow_up">Follow-up</SelectItem>
                     <SelectItem value="emergency">Emergency</SelectItem>
-                    <SelectItem value="consultation">Consultation</SelectItem>
+                    <SelectItem value="routine_checkup">
+                      Routine Checkup
+                    </SelectItem>
+                    <SelectItem value="specialist_referral">
+                      Specialist Referral
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>

@@ -12,6 +12,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { DoctorSelect } from "./doctor-select";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface RecordFormProps {
   initialData?: {
@@ -21,6 +23,7 @@ interface RecordFormProps {
     date: string;
     doctor: string;
     notes?: string;
+    sharedWith?: string[];
   };
   onSuccess?: () => void;
 }
@@ -36,7 +39,11 @@ export function RecordForm({ initialData, onSuccess }: RecordFormProps) {
     date: initialData?.date || new Date().toISOString().split("T")[0],
     doctor: initialData?.doctor || "",
     notes: initialData?.notes || "",
+    sharedWith: initialData?.sharedWith || [],
   });
+  const [selectedDoctors, setSelectedDoctors] = useState<string[]>(
+    initialData?.sharedWith || []
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,7 +62,10 @@ export function RecordForm({ initialData, onSuccess }: RecordFormProps) {
           "Content-Type": "application/json",
           "x-firebase-id": user?.id || "",
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          sharedWith: selectedDoctors,
+        }),
       });
 
       if (!response.ok) {
@@ -72,6 +82,14 @@ export function RecordForm({ initialData, onSuccess }: RecordFormProps) {
       setError(error.message);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleDoctorSelect = (doctorId: string) => {
+    if (selectedDoctors.includes(doctorId)) {
+      setSelectedDoctors(selectedDoctors.filter((id) => id !== doctorId));
+    } else {
+      setSelectedDoctors([...selectedDoctors, doctorId]);
     }
   };
 
@@ -150,6 +168,37 @@ export function RecordForm({ initialData, onSuccess }: RecordFormProps) {
             setFormData((prev) => ({ ...prev, notes: e.target.value }))
           }
         />
+      </div>
+
+      <div className="space-y-4">
+        <Label>Share with Doctors</Label>
+        <div className="border rounded-md p-4 space-y-4">
+          <DoctorSelect
+            value=""
+            onValueChange={handleDoctorSelect}
+            placeholder="Select a doctor to share with"
+          />
+
+          {selectedDoctors.length > 0 && (
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Selected Doctors:</Label>
+              <div className="space-y-1">
+                {selectedDoctors.map((doctorId) => (
+                  <div key={doctorId} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={doctorId}
+                      checked={true}
+                      onCheckedChange={() => handleDoctorSelect(doctorId)}
+                    />
+                    <Label htmlFor={doctorId} className="text-sm">
+                      {doctorId}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="flex justify-end space-x-2">

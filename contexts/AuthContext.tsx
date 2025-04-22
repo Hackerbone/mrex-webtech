@@ -37,6 +37,24 @@ interface User {
   email: string | null;
   name: string | null;
   image?: string | null;
+  userType: string;
+  isAdmin: boolean;
+  phoneNumber?: string;
+  address?: {
+    street?: string;
+    city?: string;
+    state?: string;
+    zipCode?: string;
+    country?: string;
+  };
+  preferences?: {
+    notifications: {
+      email: boolean;
+      push: boolean;
+    };
+    theme: string;
+    language: string;
+  };
 }
 
 interface AuthContextType {
@@ -44,7 +62,22 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  register: (email: string, password: string, name: string) => Promise<void>;
+  register: (
+    email: string,
+    password: string,
+    name: string,
+    userType: string,
+    additionalData?: {
+      phoneNumber?: string;
+      address?: {
+        street?: string;
+        city?: string;
+        state?: string;
+        zipCode?: string;
+        country?: string;
+      };
+    }
+  ) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -58,13 +91,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         // User is signed in
-        const userData = {
-          id: firebaseUser.uid,
-          email: firebaseUser.email,
-          name: firebaseUser.displayName,
-          image: firebaseUser.photoURL,
-        };
-
         // Check if user exists in MongoDB, if not create them
         try {
           const response = await fetch("/api/users/me", {
@@ -85,14 +111,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 name: firebaseUser.displayName || "User",
                 email: firebaseUser.email,
                 image: firebaseUser.photoURL,
+                userType: "patient", // Default to patient if not specified
               }),
             });
           }
+          console.log("User created in MongoDB");
+          const userData = await response.json();
+          setUser({
+            id: userData.firebaseId,
+            email: userData.email,
+            name: userData.name,
+            image: firebaseUser.photoURL,
+            userType: userData.userType,
+            isAdmin: userData.isAdmin,
+            phoneNumber: userData.phoneNumber,
+            address: userData.address,
+            preferences: userData.preferences,
+          });
         } catch (error) {
           console.error("Error syncing user with MongoDB:", error);
         }
-
-        setUser(userData);
       } else {
         // User is signed out
         setUser(null);
@@ -121,7 +159,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const register = async (email: string, password: string, name: string) => {
+  const register = async (
+    email: string,
+    password: string,
+    name: string,
+    userType: string,
+    additionalData?: {
+      phoneNumber?: string;
+      address?: {
+        street?: string;
+        city?: string;
+        state?: string;
+        zipCode?: string;
+        country?: string;
+      };
+    }
+  ) => {
     try {
       const userCredential = await createUserWithEmailAndPassword(
         auth,
@@ -146,6 +199,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           firebaseId: userCredential.user.uid,
           name,
           email,
+          userType,
+          phoneNumber: additionalData?.phoneNumber,
+          address: additionalData?.address,
         }),
       });
     } catch (error) {

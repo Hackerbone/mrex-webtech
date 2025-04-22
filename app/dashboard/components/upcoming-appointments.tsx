@@ -25,6 +25,7 @@ interface UpcomingAppointmentsProps {
 export function UpcomingAppointments({
   appointments,
 }: UpcomingAppointmentsProps) {
+  console.log(appointments);
   if (appointments.length === 0) {
     return (
       <div className="text-center text-muted-foreground py-4">
@@ -45,7 +46,7 @@ export function UpcomingAppointments({
               <Avatar className="h-10 w-10">
                 <AvatarFallback>
                   {appointment.doctorName
-                    .split(" ")
+                    ?.split(" ")
                     .map((word) => word[0])
                     .join("")}
                 </AvatarFallback>
@@ -53,14 +54,14 @@ export function UpcomingAppointments({
               <div>
                 <h4 className="font-medium">{appointment.doctorName}</h4>
                 <p className="text-sm text-muted-foreground">
-                  {appointment.type} • {appointment.date} at {appointment.time}
+                  {appointment.type}
                 </p>
               </div>
             </div>
             <div className="space-y-1">
               <div className="flex items-center text-sm text-muted-foreground">
                 <Calendar className="mr-1 h-3 w-3" />
-                {appointment.date}
+                {new Date(appointment.date).toLocaleDateString()}
               </div>
               <div className="flex items-center text-sm text-muted-foreground">
                 <Clock className="mr-1 h-3 w-3" />

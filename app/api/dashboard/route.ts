@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb/connection";
-import { MedicalRecord } from "@/lib/mongodb/models/MedicalRecord";
+import { MedicalRecord } from "@/lib/mongodb/models/medical-record";
 import { Appointment } from "@/lib/mongodb/models/Appointment";
 import { User } from "@/lib/mongodb/models/User";
 
@@ -23,13 +23,13 @@ export async function GET(request: Request) {
     const userId = user._id.toString();
 
     // Get recent medical records
-    const recentRecords = await MedicalRecord.find({ userId })
+    const recentRecords = await MedicalRecord.find({ patientId: userId })
       .sort({ uploadDate: -1 })
       .limit(5);
 
     // Get upcoming appointments
     const upcomingAppointments = await Appointment.find({
-      userId,
+      patientId: userId,
       date: { $gte: new Date() },
       status: "scheduled",
     })
@@ -37,9 +37,11 @@ export async function GET(request: Request) {
       .limit(5);
 
     // Get stats
-    const totalRecords = await MedicalRecord.countDocuments({ userId });
+    const totalRecords = await MedicalRecord.countDocuments({
+        patientId: userId,
+      });
     const totalAppointments = await Appointment.countDocuments({
-      userId,
+      patientId: userId,
       status: "scheduled",
     });
 

@@ -48,7 +48,7 @@ export default function RecordsPage() {
         }
 
         const data = await response.json();
-        setRecords(data);
+        setRecords(data.records);
       } catch (error: any) {
         setError(error.message);
       } finally {
@@ -85,12 +85,12 @@ export default function RecordsPage() {
     }
   };
 
-  const filteredRecords = records.filter(
-    (record) =>
-      record.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      record.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      record.doctor.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // const filteredRecords = records?.filter(
+  //   (record) =>
+  //     record.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  //     record.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  //     record.doctor.toLowerCase().includes(searchQuery.toLowerCase())
+  // );
 
   if (isLoading) {
     return <div>Loading...</div>;
@@ -99,6 +99,13 @@ export default function RecordsPage() {
   if (error) {
     return <div>Error: {error}</div>;
   }
+
+  const filteredRecords = records.filter(
+    (record) =>
+      record.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      record.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      record.doctor.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="space-y-6 p-6">
